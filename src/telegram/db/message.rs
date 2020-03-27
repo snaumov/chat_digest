@@ -4,6 +4,7 @@ use dgraph::{Dgraph, Mutation, DgraphError};
 use serde::{Serialize, Deserialize};
 use serde_json;
 use std::rc::{Rc};
+use std::sync::Arc;
 use std::collections::HashMap;
 use std::boxed::Box;
 use std::error;
@@ -43,9 +44,9 @@ struct AllGroupedMessages {
     messages: Vec<GroupedMessage>,
 }
 
-pub struct MessageDb<'a> {
+pub struct MessageDb {
     pub schema: String,
-    db: &'a Dgraph,
+    db: Arc<Dgraph>,
 }
 
 
@@ -54,8 +55,8 @@ struct QueryResponse {
     data: AllMessages,
 }
 
-impl <'a> MessageDb<'a> {
-    pub fn new(client: &'a dgraph::Dgraph) -> MessageDb<'a> {
+impl MessageDb {
+    pub fn new(client: Arc<dgraph::Dgraph>) -> MessageDb {
         
         MessageDb {
             db: client,

@@ -2,12 +2,13 @@
 use super::db::{Db, Message, User, ReplyTo};
 use telegram_bot::{types as tb_types, Error, Api};
 use futures::StreamExt;
+use std::sync::Arc;
 
 use dgraph::{DgraphError};
 
-pub struct Bot<'a> {
+pub struct Bot {
     api: Api,
-    db: &'a Db<'a>,
+    db: Arc<Db>,
 }
 
 #[derive(PartialEq)]
@@ -15,8 +16,8 @@ enum BotCommands {
     Digest,
 }
 
-impl<'a> Bot<'a> {
-    pub fn new (token: String, db: &'a Db) -> Bot<'a> {
+impl<'a> Bot {
+    pub fn new (token: String, db: Arc<Db>) -> Bot {
         let api = Api::new(token);
         
         Bot {

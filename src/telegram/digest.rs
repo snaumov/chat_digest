@@ -6,9 +6,10 @@ use super::db::{Db, DbError, GroupedMessage, DigestInput};
 use std::error;
 use std::fmt;
 use std::convert;
+use std::sync::Arc;
 
-struct Digest<'a> {
-    db: Db<'a>,
+pub struct Digest {
+    db: Arc<Db>,
 }
 
 #[derive(Debug)]
@@ -47,18 +48,18 @@ impl error::Error for DigestError {
   }
 }
 
-impl<'a> Digest<'a> {
-    pub fn new(db: Db) -> Digest {
+impl<'a> Digest {
+    pub fn new(db: Arc<Db>) -> Digest {
         Digest {
             db,
         }
     }
 
     pub fn build_digest(&self) -> Result<(), DigestError> {
-        // TODO more than 10 days?
-        let start_date = (Utc::now() - Duration::days(10)).timestamp();
 
-        let all_primary_messages_past_date = self.db.message.get_primary_messages_past_date(start_date)?;
+        let start_timestamp = self.pick_start_timestamp();
+
+        let all_primary_messages_past_date = self.db.message.get_primary_messages_past_date(start_timestamp)?;
 
         for primary_message in all_primary_messages_past_date.iter() {
             let grouped_message = self.db.message.get_message_group_by_id(primary_message.uid.clone())?;
@@ -81,7 +82,7 @@ impl<'a> Digest<'a> {
 
 }
 
-impl<'a> Digest<'a> {
+impl<'a> Digest {
     fn summary_message_group(&self, grouped_message: GroupedMessage) -> String {
         let mut sum_string = "".to_string();
 
@@ -94,6 +95,22 @@ impl<'a> Digest<'a> {
         }
 
         return sum_string;
+    }
+
+    fn pick_start_timestamp(&self) -> i64 {
+        // TODO more than 10 days?
+        let ten_days_ago_timestamp = (Utc::now() - Duration::days(10)).timestamp();
+
+        let recent_digest = self.db.digest.get_most_recent_digest();
+
+        match recent_digest {
+            Ok(digest) => {
+                return if digest.date < ten_days_ago_timestamp { digest.date } else { ten_days_ago_timestamp };
+            },
+            Err(_) => {
+                return ten_days_ago_timestamp;
+            } 
+        }
     }
 }
 

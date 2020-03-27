@@ -1,20 +1,23 @@
 use dgraph::{make_dgraph, DgraphClient, Dgraph, DgraphError};
+use serde_json::Error as SerdeJSONError;
 use super::message::MessageDb;
 use super::digest::DigestDb;
 use std::error;
 use std::fmt;
 use std::convert;
+use std::sync::Arc;
 // use dgraph::client::Dgraph;
 
-pub struct Db<'a> {
-  pub message: MessageDb<'a>,
-  pub digest: DigestDb<'a>,
+pub struct Db {
+  pub message: MessageDb,
+  pub digest: DigestDb,
 }
 
 #[derive(Debug)]
 pub enum DbError {
   Custom(String),
   DgraphError(DgraphError),
+  SerdeJSONError(SerdeJSONError),
 }
 
 impl fmt::Display for DbError {
@@ -22,6 +25,7 @@ impl fmt::Display for DbError {
     match *self {
       DbError::Custom(ref custom_error) => write!(f, "[DB]: {}", custom_error),
       DbError::DgraphError(ref dgraph_error) => write!(f, "[DB]: {}", dgraph_error),
+      DbError::SerdeJSONError(ref serde_error) => write!(f, "[DB]: {}", serde_error),
     }
   }
 }
@@ -29,6 +33,12 @@ impl fmt::Display for DbError {
 impl convert::From<DgraphError> for DbError {
   fn from (error: DgraphError) -> Self {
       DbError::DgraphError(error)
+  }
+}
+
+impl convert::From<SerdeJSONError> for DbError {
+  fn from (error: SerdeJSONError) -> Self {
+      DbError::SerdeJSONError(error)
   }
 }
 
@@ -46,10 +56,10 @@ impl error::Error for DbError {
   }
 }
 
-impl <'a> Db <'a> {
-  pub fn new(client: &'a dgraph::Dgraph) -> Db<'a> {
-    let message = MessageDb::new(client);
-    let digest = DigestDb::new(client);
+impl <'a> Db {
+  pub fn new(client: Arc<dgraph::Dgraph>) -> Db {
+    let message = MessageDb::new(client.clone());
+    let digest = DigestDb::new(client.clone());
 
     let op = dgraph::Operation{
       schema: message.schema.clone(), ..Default::default()

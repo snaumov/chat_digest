@@ -4,15 +4,39 @@
 
 // }
 
-use clokwerk::{Scheduler};
+use clokwerk::{Scheduler as ClokwerkScheduler, TimeUnits};
 use std::time::Duration;
 use clokwerk::Interval::*;
-use super::digest;
+use super::digest::{Digest, DigestError};
+use std::thread;
+use std::marker::Send;
 
-pub fn run() {
-    let mut scheduler = Scheduler::new();
+// #[derive(Send)]
+// struct Scheduler<'a> {
+//     digest: Digest<'a>,
+//     scheduler: ClokwerkScheduler,
+// }
 
-    scheduler.every(1.minutes()).run(|| println!("Hi"));
+// impl<'a> Scheduler<'a> {
+//     pub fn new(digest: Digest) -> Scheduler {
 
-    scheduler.watch_thread(Duration::from_millis(100));
+//         let mut scheduler = ClokwerkScheduler::new();
+
+//         Scheduler {
+//             digest,
+//             scheduler,
+//         }
+//     }
+
+pub fn run<'a>(digest: Digest) {
+    let mut scheduler = ClokwerkScheduler::new();
+
+    scheduler.every(5.seconds()).run(move || { 
+        digest.build_digest();
+        // Ok(())
+    });
+
+    let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
+    thread_handle.stop();
 }
+// }

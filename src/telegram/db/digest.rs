@@ -1,13 +1,15 @@
 use dgraph::{Dgraph, DgraphError};
 use serde::{Serialize, Deserialize};
 use super::db::DbError;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Digest {
     uid: String,
     message_uid: String,
     text: String,
-    date: i64,
+    pub date: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -17,13 +19,18 @@ pub struct DigestInput {
     pub date: i64,
 }
 
-pub struct DigestDb<'a> {
-    db: &'a Dgraph
+pub struct DigestDb {
+    db: Arc<Dgraph>
 }
 
-impl<'a> DigestDb<'a> {
+#[derive(Serialize, Deserialize, Debug)]
+struct AllDigests {
+    digests: Vec<Digest>,
+}
 
-    pub fn new(db: &'a Dgraph) -> DigestDb<'a> {
+impl<'a> DigestDb {
+
+    pub fn new(db: Arc<Dgraph>) -> DigestDb {
         DigestDb {
             db,
         }
@@ -42,6 +49,31 @@ impl<'a> DigestDb<'a> {
         txn.commit()?;
 
         Ok(())
+    }
+
+    pub fn get_most_recent_digest(&self) -> Result<Digest, DbError> {
+
+        let q = r#"query digests() {
+            digests(func: has(text), orderasc: date, first: 1) {
+              uid
+              message_uid
+              text
+              date
+            }
+          }"#.to_string();
+
+        let resp = &self.db.new_readonly_txn().query(q)?;
+
+        let digests: AllDigests = serde_json::from_slice(&resp.json)?;
+
+        if digests.digests.len() < 1 {
+
+            return Err(DbError::Custom("No messages found".to_string()));
+
+        }
+
+        return Ok(digests.digests.into_iter().nth(0).unwrap());
+
     }
 
 }

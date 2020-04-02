@@ -1,8 +1,9 @@
 use dgraph::{make_dgraph, DgraphClient, Dgraph, DgraphError};
+use serde::{Serialize, Deserialize};
 use serde_json::Error as SerdeJSONError;
 use super::message::MessageDb;
 use super::digest::DigestDb;
-use std::error;
+use std::error::Error;
 use std::fmt;
 use std::convert;
 use std::sync::Arc;
@@ -11,6 +12,11 @@ use std::sync::Arc;
 pub struct Db {
   pub message: MessageDb,
   pub digest: DigestDb,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DgraphType {
+  pub r#type: String,
 }
 
 #[derive(Debug)]
@@ -24,8 +30,8 @@ impl fmt::Display for DbError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match *self {
       DbError::Custom(ref custom_error) => write!(f, "[DB]: {}", custom_error),
-      DbError::DgraphError(ref dgraph_error) => write!(f, "[DB]: {}", dgraph_error),
-      DbError::SerdeJSONError(ref serde_error) => write!(f, "[DB]: {}", serde_error),
+      DbError::DgraphError(ref dgraph_error) => write!(f, "[DB]: Dgraph {}", dgraph_error),
+      DbError::SerdeJSONError(ref serde_error) => write!(f, "[DB]: Serde {}", serde_error),
     }
   }
 }
@@ -42,7 +48,7 @@ impl convert::From<SerdeJSONError> for DbError {
   }
 }
 
-impl error::Error for DbError {
+impl Error for DbError {
 
   // fn cause(&self) -> Option<&dyn error::Error> {
   //   match self {
@@ -51,7 +57,7 @@ impl error::Error for DbError {
   //   }
   // }
 
-  fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+  fn source(&self) -> Option<&(dyn Error + 'static)> {
     None
   }
 }

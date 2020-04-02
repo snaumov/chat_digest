@@ -32,11 +32,17 @@ pub fn run<'a>(digest: Digest) {
     let mut scheduler = ClokwerkScheduler::new();
 
     scheduler.every(5.seconds()).run(move || { 
-        digest.build_digest();
-        // Ok(())
+        println!("{}", "running".to_string());
+        // let built_digest = digest.build_digest();
+
+        match digest.build_digest() {
+            Ok(_) => {},
+            Err(err) => println!("{}", err),
+        }
     });
 
-    let thread_handle = scheduler.watch_thread(Duration::from_millis(100));
-    thread_handle.stop();
+    loop {
+        scheduler.run_pending();
+        thread::sleep(Duration::from_millis(100));
+    }
 }
-// }

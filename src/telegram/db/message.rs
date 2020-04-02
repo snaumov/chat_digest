@@ -1,4 +1,4 @@
-use super::db::{Db, DbError};
+use super::db::{Db, DbError, DgraphType};
 use super::user;
 use dgraph::{Dgraph, Mutation, DgraphError};
 use serde::{Serialize, Deserialize};
@@ -20,8 +20,20 @@ pub struct Message {
     pub message_id: String,
     pub text: String,
     pub date: i64,
+    pub chat_id: i64,
     // pub from: user::User,
     pub reply_to: Option<ReplyTo>,
+    // pub reply_to: Option<Box<Message>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MessageInput {
+    message_id: String,
+    text: String,
+    date: i64,
+    // pub from: user::User,
+    reply_to: Option<ReplyTo>,
+    chat_id: i64,
     // pub reply_to: Option<Box<Message>>,
 }
 
@@ -55,6 +67,24 @@ struct QueryResponse {
     data: AllMessages,
 }
 
+impl MessageInput {
+    pub fn new(
+        message_id: String, 
+        text: String, 
+        date: i64, 
+        reply_to: Option<ReplyTo>,
+        chat_id: i64,
+    ) -> MessageInput {
+        MessageInput {
+            message_id,
+            text,
+            date,
+            reply_to,
+            chat_id,
+        }
+    }
+}
+
 impl MessageDb {
     pub fn new(client: Arc<dgraph::Dgraph>) -> MessageDb {
         
@@ -69,7 +99,7 @@ impl MessageDb {
     //     self.db = Some(db);
     // }
 
-    pub fn new_message(&self, message: Message) -> Result<(), DgraphError> {
+    pub fn new_message(&self, message: MessageInput) -> Result<(), DgraphError> {
         let dgraph = &self.db;
         let mut txn = dgraph.new_txn();
 
@@ -94,20 +124,22 @@ impl MessageDb {
     }
 
     pub fn get_primary_messages_past_date(&self, date: i64) -> Result<Vec<Message>, DbError> {
-        let q = r#"query all($date: number) {
-            messages(func: ge(date, $date)) @filter(NOT has(reply_to)) {
+        let q = r#"query all($date: int) {
+            messages(func: ge(date, $date)) @filter(NOT has(reply_to) AND has(message_id)) {
               uid
               text
               date
+              message_id
+              chat_id
             }
           }"#.to_string();
 
         let mut vars = HashMap::new();
         vars.insert("$date".to_string(), date.to_string());
 
-        let resp = &self.db.new_readonly_txn().query_with_vars(q, vars).expect("query");
+        let resp = &self.db.new_readonly_txn().query_with_vars(q, vars)?;
 
-        let messages: AllMessages = serde_json::from_slice(&resp.json).expect("parsing");
+        let messages: AllMessages = serde_json::from_slice(&resp.json)?;
 
         if messages.messages.len() < 1 {
 
@@ -120,12 +152,14 @@ impl MessageDb {
 
     pub fn get_message_group_by_id(&self, uid: String) -> Result<GroupedMessage, DbError> {
 
-        let q = r#"query all($uid: uid) {
-            messages(func: uid($uid)) @recurse(depth: 100)  {
+        let q = r#"query all($uid: string) {
+            messages(func: uid($uid)) @recurse(depth: 100) @filter(has(message_id))  {
               uid
               text
               date
+              message_id
               reply_to: ~reply_to
+              chat_id
             }
         }"#.to_string();
 
@@ -154,6 +188,7 @@ impl MessageDb {
               date
               from
               reply_to
+              chat_id
             }
           }"#.to_string();
 

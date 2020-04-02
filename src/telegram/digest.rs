@@ -1,6 +1,4 @@
-use chrono::NaiveTime;
-use chrono::Utc;
-use chrono::Duration;
+use chrono::{ Utc, Duration, NaiveTime };
 use super::db::{Db, DbError, GroupedMessage, DigestInput};
 // use super::db::m
 use std::error;
@@ -71,6 +69,7 @@ impl<'a> Digest {
                     message_uid: primary_message.uid.clone(),
                     date: primary_message.date,
                     text: summary,
+                    chat_id: primary_message.chat_id,
                 }
             )?
 
@@ -105,9 +104,10 @@ impl<'a> Digest {
 
         match recent_digest {
             Ok(digest) => {
-                return if digest.date < ten_days_ago_timestamp { digest.date } else { ten_days_ago_timestamp };
+                return if ten_days_ago_timestamp < digest.date { digest.date + 1 } else { ten_days_ago_timestamp };
             },
-            Err(_) => {
+            Err(err) => {
+                println!("[Digest]: {}", err);
                 return ten_days_ago_timestamp;
             } 
         }

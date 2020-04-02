@@ -3,6 +3,7 @@ use std::env;
 use telegram_bot::{Api, Error, GetMe};
 use dgraph::make_dgraph;
 use std::sync::Arc;
+use std::thread;
 // use tokio::runtime::Handle;
 // use tokio::reactor::Core;
 
@@ -22,7 +23,9 @@ async fn main() -> Result<(), Error> {
 
     let digest = digest::Digest::new(arc_db.clone());
 
-    scheduler::run(digest);
+    // thread::spawn(move || {
+    //     scheduler::run(digest);
+    // });
     
     let summary_bot = bot::Bot::new(token.to_string(), arc_db.clone());
 

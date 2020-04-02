@@ -4,11 +4,12 @@ use super::db::DbError;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Digest {
     uid: String,
-    message_uid: String,
-    text: String,
+    pub message_uid: String,
+    pub chat_id: i64,
+    pub text: String,
     pub date: i64,
 }
 
@@ -17,6 +18,7 @@ pub struct DigestInput {
     pub message_uid: String,
     pub text: String,
     pub date: i64,
+    pub chat_id: i64,
 }
 
 pub struct DigestDb {
@@ -54,11 +56,12 @@ impl<'a> DigestDb {
     pub fn get_most_recent_digest(&self) -> Result<Digest, DbError> {
 
         let q = r#"query digests() {
-            digests(func: has(text), orderasc: date, first: 1) {
+            digests(func: has(message_uid), orderdesc: date, first: 1) {
               uid
               message_uid
               text
               date
+              chat_id
             }
           }"#.to_string();
 
@@ -67,12 +70,41 @@ impl<'a> DigestDb {
         let digests: AllDigests = serde_json::from_slice(&resp.json)?;
 
         if digests.digests.len() < 1 {
-
-            return Err(DbError::Custom("No messages found".to_string()));
+            // TODO INFO error
+            return Err(DbError::Custom("No digests found".to_string()));
 
         }
 
         return Ok(digests.digests.into_iter().nth(0).unwrap());
+
+    }
+
+    pub fn get_digests_past_timestamp(&self, timestamp: i64) -> Result<Vec<Digest>, DbError> {
+
+        let q = r#"query digests($date: int) {
+            digests(func: ge(date, $date)) @filter(has(message_uid)) {
+              uid
+              message_uid
+              text
+              date
+              chat_id
+            }
+          }"#.to_string();
+
+        let mut vars = HashMap::new();
+        vars.insert("$date".to_string(), timestamp.to_string());
+
+        let resp = &self.db.new_readonly_txn().query_with_vars(q, vars)?;
+
+        let digests: AllDigests = serde_json::from_slice(&resp.json)?;
+
+        if digests.digests.len() < 1 {
+            // TODO INFO error
+            return Err(DbError::Custom("No digests found".to_string()));
+
+        }
+
+        return Ok(digests.digests);
 
     }
 

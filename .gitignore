@@ -1,3 +1,8 @@
 /target
 **/*.rs.bk
 .vscode
+<<<<<<< HEAD
+=======
+**/__pycache__/
+.env
+>>>>>>> 9f9718b... Init commit

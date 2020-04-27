@@ -1,11 +1,10 @@
-use std::env;
-
-use telegram_bot::{Api, Error, GetMe};
+use telegram_bot::{Error};
 use dgraph::make_dgraph;
 use std::sync::Arc;
 use std::thread;
-// use tokio::runtime::Handle;
-// use tokio::reactor::Core;
+
+#[macro_use]
+extern crate dotenv_codegen;
 
 mod telegram;
 use telegram::{bot, db, digest, scheduler};
@@ -13,8 +12,14 @@ use telegram::{bot, db, digest, scheduler};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+<<<<<<< HEAD
     let token = "private";
     let db_host = "private";
+=======
+    // TODO move env vars
+    let token = dotenv!("TG_TOKEN");
+    let db_host = dotenv!("DB_HOST");
+>>>>>>> 9f9718b... Init commit
     
     let client = make_dgraph!(dgraph::new_dgraph_client(&db_host));
     let db = db::Db::new(Arc::new(client));

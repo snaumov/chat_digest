@@ -10,3 +10,14 @@ https://telegramic.org/bot/summarizatorbot/
 2. Add bot to the group chat. 
 3. Send `/digest` command to the bot
 4. Expect a personal message from the bot with the messages digest
+
+### Boot up locally
+
+1. In the root folder create `.env` file with this content
+
+```
+TG_TOKEN=<your_tg_token>
+DB_HOST=<dgraph_host, ie. localhost:9800>
+```
+
+2. 

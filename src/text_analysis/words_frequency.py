@@ -17,7 +17,6 @@ length = 100
 
 
 def get_words_frequency(text):
-    print("old", text)
     text = u"".join(ch for ch in text if ch not in punctuation).lower()
     m = Mystem()
 

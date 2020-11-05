@@ -84,8 +84,6 @@ impl<'a> Bot {
     }
     
     fn get_bot_command(&self, message: &tb_types::Message) -> Option<BotCommands> {
-<<<<<<< HEAD
-=======
         let chat_id = -463169522;
         // TODO enable below when ready for deploy
         // let chat_id = match i64::try_from(message.chat.id()) {
@@ -95,7 +93,6 @@ impl<'a> Bot {
         //     Err(_) => { return None },
         // };
 
->>>>>>> 8609e6d... hardcoding users for now
         let (entities, text) = match &message.kind {
             tb_types::MessageKind::Text { entities, data } => {
                 (entities, data)
@@ -159,9 +156,6 @@ impl<'a> Bot {
 
 
 
-<<<<<<< HEAD
-    async fn handle_digest_command(&self, days: String, user_id: tb_types::UserId) {
-=======
     async fn handle_digest_command(&self, chat_id: i64, days: String, user_id: tb_types::UserId) {
         // User is hardcoded for now.
         let permitted_user_ids = vec![3147171];
@@ -170,7 +164,6 @@ impl<'a> Bot {
             return;
         }
 
->>>>>>> 8609e6d... hardcoding users for now
         let parsed_days = days.parse::<u32>();
 
         let days_to_use = match parsed_days {

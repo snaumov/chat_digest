@@ -20,4 +20,12 @@ TG_TOKEN=<your_tg_token>
 DB_HOST=<dgraph_host, ie. localhost:9800>
 ```
 
-2. 
+2. Run the `dgraph` database on your machine
+
+3. To start the python word summarizator  
+`cd src/telegram/text_analysis`  
+`export FLASK_APP=main.py`  
+`python3 -m flask run`  
+
+4. Start the main app with  
+`cargo run`
